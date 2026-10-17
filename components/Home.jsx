@@ -74,11 +74,11 @@ export default function Home({ navigation }) {
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 15, fontWeight: "bold", color: COLORS.text }}>
-                  {firebaseEnabled ? "Sign in to sync across devices" : "Not signed in"}
+                  {firebaseEnabled ? "Sign in to create or join a household" : "Not signed in"}
                 </Text>
                 <Text style={{ fontSize: 13, color: COLORS.muted }}>
                   {firebaseEnabled
-                    ? "Use the same Google account on another phone to see these lists."
+                    ? "Create a household and invite family by email to share your lists."
                     : "Lists are saved on this device only."}
                 </Text>
               </View>
