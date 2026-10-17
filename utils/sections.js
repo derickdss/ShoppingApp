@@ -14,9 +14,12 @@ export const DEFAULT_SECTIONS = [
 // Build a fresh list object pre-filled with the default (empty) sections.
 export function buildNewList(title = "") {
   const now = new Date().toISOString();
+  const trimmed = (title || "").trim();
+  // Default title is the creation date, e.g. "17 Oct 2026-list".
+  const finalTitle = trimmed || `${formatDate(now)}-list`;
   return {
     id: makeId(),
-    title: (title || "").trim(),
+    title: finalTitle,
     date: now,
     sections: DEFAULT_SECTIONS.map((s) => ({
       id: makeId(),
