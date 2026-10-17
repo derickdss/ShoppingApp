@@ -3,7 +3,6 @@
 //
 // Env vars (set with: firebase functions:secrets:set <NAME>)
 //   RESEND_API_KEY  — from https://resend.com/api-keys
-//   APP_URL         — (optional) link included in the email, e.g. your hosted web app
 //   FROM_EMAIL      — (optional) verified sender address; defaults to Resend's test address
 
 const { onDocumentWritten } = require("firebase-functions/v2/firestore");
@@ -22,7 +21,6 @@ exports.invitationEmail = onDocumentWritten("invitations/{email}", async (event)
 
   const householdName = invite.householdName || "a household";
   const invitedBy = invite.invitedBy || "a household admin";
-  const appUrl = process.env.APP_URL || "";
   const from = process.env.FROM_EMAIL || "Shopping List <onboarding@resend.dev>";
 
   const html = `
@@ -33,9 +31,8 @@ exports.invitationEmail = onDocumentWritten("invitations/{email}", async (event)
         <strong>${invitedBy}</strong> invited you to share shopping lists on the Shopping List app.
       </p>
       <p style="font-size: 15px; line-height: 1.5;">
-        To join, open the app and sign in with this Google account — you'll see a
-        <strong>"You've been invited"</strong> prompt and can tap <em>Join household</em>.
-        ${appUrl ? `<br/><br/><a href="${appUrl}" style="color: #4f46e5;">Open the app here</a>` : ""}
+        Open the Shopping List app and sign in with this Google account.
+        You'll see a <strong>"You've been invited"</strong> prompt there.
       </p>
       <p style="font-size: 13px; color: #888;">
         If you don't want to join, just ignore this email — the invitation expires on its own.
