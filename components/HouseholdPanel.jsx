@@ -170,9 +170,17 @@ export default function HouseholdPanel({
           />
           <TouchableOpacity
             onPress={async () => {
+              const em = addEmail.trim();
+              if (!em) return;
               try {
-                await onAddMember(addEmail);
+                const result = await onAddMember(em);
                 setAddEmail("");
+                if (result && result.invited) {
+                  Alert.alert(
+                    "Invitation saved",
+                    `${em} will see a \"you've been invited\" prompt the next time they sign in with that Google account.`
+                  );
+                }
               } catch (e) {
                 Alert.alert("Couldn't add member", e.message);
               }

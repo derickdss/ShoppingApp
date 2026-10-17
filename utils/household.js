@@ -20,7 +20,7 @@
 //   sharedWith: [uid, ...] — empty/absent = whole household;
 //   a non-empty array = only those members (plus the creator) can see it.
 
-import { doc, setDoc, getDoc, onSnapshot, updateDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, onSnapshot, updateDoc, deleteDoc } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getDb, findUserByEmail } from "./firebase";
@@ -37,6 +37,8 @@ export async function getStoredHouseholdCode() {
 
 const householdRef = (code) => doc(getDb(), "households", code.toUpperCase());
 const listsRef = (code) => doc(getDb(), "households", code.toUpperCase(), "lists", "data");
+// One pending invitation per email. Cleared once accepted/declined.
+const invitationRef = (email) => doc(getDb(), "invitations", email.trim().toLowerCase());
 
 function makeCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O/1/I look-alikes
@@ -167,8 +169,12 @@ export async function setMemberAccess(code, uid, { role, expiresAt, remove } = {
   await updateDoc(householdRef(code), { members: next });
 }
 
-// Add a member by email. The person must have signed in with that Google
-// account at least once (that's what publishes their email for lookup).
+// Add a member by email. If that person has already signed in with the Google
+// account (so we know their uid), they're added straight away. Otherwise we
+// leave a pending invitation in Firestore — the next time they sign in, the
+// app shows them a "you've been invited" prompt to accept.
+//
+// Returns { added: true, email } or { invited: true, email }.
 export async function addMember(code, email) {
   if (!getDb() || !code) throw new Error("Firebase is not configured yet.");
   const user = getAuth().currentUser;
@@ -185,20 +191,79 @@ export async function addMember(code, email) {
   if (!em) throw new Error("Enter an email address.");
   if (members.some((m) => m.email === em)) throw new Error("That person is already in the household.");
   const uid = await findUserByEmail(em);
-  if (!uid) {
-    throw new Error(
-      `No account found for ${em}. They need to sign in with that Google account in the app once first.`
-    );
+  if (uid) {
+    await updateDoc(householdRef(clean), {
+      members: members.concat({
+        uid,
+        email: em,
+        joinedAt: Date.now(),
+        role: "member",
+        expiresAt: null,
+      }),
+    });
+    // If there was a pending invitation for this email, clear it.
+    await deleteDoc(invitationRef(em)).catch(() => {});
+    return { added: true, email: em };
   }
-  await updateDoc(householdRef(clean), {
-    members: members.concat({
-      uid,
-      email: em,
-      joinedAt: Date.now(),
-      role: "member",
-      expiresAt: null,
-    }),
+  // Not signed in yet — leave a pending invitation for them to accept.
+  await setDoc(invitationRef(em), {
+    email: em,
+    householdCode: clean,
+    householdName: snap.data().name,
+    invitedBy: me.email || "a household admin",
+    createdAt: Date.now(),
+    status: "pending",
   });
+  return { invited: true, email: em };
+}
+
+// ---------------------------------------------------------------- invitations
+
+// Return the signed-in user's pending invitation (if any), or null.
+export async function getPendingInvitation(email) {
+  if (!getDb() || !email) return null;
+  const snap = await getDoc(invitationRef(email));
+  if (!snap.exists()) return null;
+  const data = snap.data();
+  if (data.status !== "pending") return null;
+  return {
+    email: data.email,
+    householdCode: data.householdCode,
+    householdName: data.householdName,
+    invitedBy: data.invitedBy,
+    createdAt: data.createdAt,
+  };
+}
+
+// Accept: add the signed-in user to the household and clear the invitation.
+// Returns the household code (for the caller to start syncing lists).
+export async function acceptInvitation(invitation) {
+  if (!getDb() || !invitation) throw new Error("Nothing to accept.");
+  const user = getAuth().currentUser;
+  if (!user) throw new Error("Sign in first.");
+  const clean = (invitation.householdCode || "").toUpperCase();
+  const snap = await getDoc(householdRef(clean));
+  await deleteDoc(invitationRef(invitation.email)).catch(() => {});
+  if (!snap.exists()) throw new Error("That household no longer exists.");
+  const members = snap.data().members || [];
+  if (!members.some((m) => m.uid === user.uid)) {
+    await updateDoc(householdRef(clean), {
+      members: members.concat({
+        uid: user.uid,
+        email: user.email || "",
+        joinedAt: Date.now(),
+        role: "member",
+        expiresAt: null,
+      }),
+    });
+  }
+  return clean;
+}
+
+// Decline: just clear the invitation.
+export async function declineInvitation(email) {
+  if (!getDb() || !email) return;
+  await deleteDoc(invitationRef(email)).catch(() => {});
 }
 
 // ---------------------------------------------------------------- live subscriptions

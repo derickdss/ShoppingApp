@@ -8,6 +8,9 @@ import {
   addMember,
   myRole as computeMyRole,
   onHouseholdChange,
+  getPendingInvitation,
+  acceptInvitation as acceptInvitationFn,
+  declineInvitation as declineInvitationFn,
   HOUSEHOLD_CODE_KEY,
 } from "./household";
 import { onAuthChange, isFirebaseConfigured, storeUserProfile } from "./firebase";
@@ -20,6 +23,7 @@ export default function useHousehold() {
   const [household, setHousehold] = useState(null); // { code, name, members }
   const [storedCode, setStoredCode] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [pendingInvitation, setPendingInvitation] = useState(null);
 
   // Track auth; restore the remembered household code on sign-in.
   useEffect(() => {
@@ -66,6 +70,20 @@ export default function useHousehold() {
     };
   }, [user, storedCode]);
 
+  // When the signed-in user has an email, check whether an admin left them a
+  // pending invitation. Shown as a "you've been invited" prompt in the UI.
+  useEffect(() => {
+    let cancelled = false;
+    if (!user || !user.email) {
+      setPendingInvitation(null);
+      return;
+    }
+    getPendingInvitation(user.email)
+      .then((inv) => { if (!cancelled) setPendingInvitation(inv); })
+      .catch(() => { if (!cancelled) setPendingInvitation(null); });
+    return () => { cancelled = true; };
+  }, [user]);
+
   const create = useCallback(async (name) => {
     const code = await createHousehold(name);
     await AsyncStorage.setItem(HOUSEHOLD_CODE_KEY, code);
@@ -105,13 +123,29 @@ export default function useHousehold() {
     [setAccess]
   );
 
-  // Add a member by their Google email (they must have signed in once).
+  // Add a member by their Google email. If they've signed in once they're
+  // added directly; otherwise a pending invitation is left for them.
   const add = useCallback(
     async (email) => {
-      if (storedCode) await addMember(storedCode, email);
+      if (!storedCode) return;
+      return addMember(storedCode, email);
     },
     [storedCode]
   );
+
+  // Accept a pending invitation: join the household and start syncing lists.
+  const acceptInvitation = useCallback(async (inv) => {
+    const code = await acceptInvitationFn(inv);
+    await AsyncStorage.setItem(HOUSEHOLD_CODE_KEY, code);
+    setStoredCode(code);
+    setPendingInvitation(null);
+  }, []);
+
+  // Decline a pending invitation.
+  const declineInvitation = useCallback(async (inv) => {
+    await declineInvitationFn(inv.email);
+    setPendingInvitation(null);
+  }, []);
 
   return {
     user,
@@ -126,5 +160,8 @@ export default function useHousehold() {
     remove,
     setAccess,
     addMember: add,
+    pendingInvitation,
+    acceptInvitation,
+    declineInvitation,
   };
 }

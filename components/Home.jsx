@@ -28,7 +28,19 @@ export default function Home({ navigation }) {
     login,
     logout,
   } = useLists();
-  const { household, create, join, leave, setAccess, addMember } = useHousehold();
+  const {
+    household,
+    create,
+    join,
+    leave,
+    setAccess,
+    addMember,
+    pendingInvitation,
+    acceptInvitation,
+    declineInvitation,
+  } = useHousehold();
+
+  const [accepting, setAccepting] = useState(false);
 
   const sorted = [...lists].sort(
     (a, b) => new Date(b.date) - new Date(a.date)
@@ -161,6 +173,52 @@ export default function Home({ navigation }) {
           })
         )}
       </ScrollView>
+
+      {/* "You've been invited" prompt (shown when an admin added you by email) */}
+      {pendingInvitation && (
+        <Modal
+          transparent
+          visible
+          animationType="fade"
+        >
+          <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "center", alignItems: "center", padding: 24 }}>
+            <View style={{ backgroundColor: COLORS.card, borderRadius: 16, padding: 22, width: "100%", maxWidth: 340, elevation: 8 }}>
+              <Text style={{ fontSize: 26, textAlign: "center" }}>🏠</Text>
+              <Text style={{ fontSize: 18, fontWeight: "bold", color: COLORS.text, textAlign: "center", marginTop: 6 }}>
+                You've been invited
+              </Text>
+              <Text style={{ fontSize: 14, color: COLORS.muted, textAlign: "center", marginTop: 8 }}>
+                {pendingInvitation.invitedBy || "A household admin"} invited you to join
+                <Text style={{ fontWeight: "bold", color: COLORS.text }}> {pendingInvitation.householdName || "a household"} </Text>
+                to share shopping lists.
+              </Text>
+              <View style={{ flexDirection: "row", justifyContent: "flex-end", marginTop: 18 }}>
+                <TouchableOpacity
+                  onPress={() => declineInvitation(pendingInvitation)}
+                  style={{ paddingVertical: 10, paddingHorizontal: 16, borderRadius: 10, backgroundColor: "#eee", marginRight: 10 }}
+                >
+                  <Text style={{ color: COLORS.text, fontWeight: "bold" }}>Decline</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={async () => {
+                    setAccepting(true);
+                    try {
+                      await acceptInvitation(pendingInvitation);
+                    } catch (e) {
+                      Alert.alert("Couldn't join", e.message);
+                      setAccepting(false);
+                    }
+                  }}
+                  disabled={accepting}
+                  style={{ paddingVertical: 10, paddingHorizontal: 16, borderRadius: 10, backgroundColor: COLORS.primary }}
+                >
+                  <Text style={{ color: "#fff", fontWeight: "bold" }}>{accepting ? "Joining…" : "Join household"}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
 
       {/* Delete confirmation (Alert.alert is a no-op on web, so use a Modal) */}
       <Modal
