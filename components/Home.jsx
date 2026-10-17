@@ -39,6 +39,7 @@ export default function Home({ navigation }) {
   };
 
   const confirmDelete = (list) => {
+    console.log("[bin] delete pressed for", list.id, list.title);
     Alert.alert(
       "Delete list?",
       `Delete "${list.title || "Untitled list"}"? This cannot be undone.`,
@@ -152,8 +153,12 @@ export default function Home({ navigation }) {
                       {total} item{total === 1 ? "" : "s"} • {done} done
                     </Text>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => confirmDelete(list)} style={{ padding: 6 }}>
-                    <Text style={{ color: COLORS.danger, fontSize: 18 }}>🗑</Text>
+                  <TouchableOpacity
+                    onPress={() => confirmDelete(list)}
+                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                    style={{ padding: 10, borderRadius: 8, backgroundColor: "#fdecec" }}
+                  >
+                    <Text style={{ color: COLORS.danger, fontSize: 20 }}>🗑</Text>
                   </TouchableOpacity>
                 </View>
               </View>
