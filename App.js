@@ -7,6 +7,7 @@ import Home from "./components/Home";
 import ListEditor from "./components/ListEditor";
 import { ListsContext } from "./utils/ListsContext";
 import useLists from "./utils/useLists";
+import useHousehold from "./utils/useHousehold";
 
 const HEADER = {
   headerStyle: { backgroundColor: COLORS.header },
@@ -16,7 +17,8 @@ const HEADER = {
 };
 
 export default function App() {
-  const listsState = useLists();
+  const { user, household } = useHousehold();
+  const listsState = useLists(household);
   const Stack = createNativeStackNavigator();
 
   return (

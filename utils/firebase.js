@@ -10,8 +10,18 @@
 //
 // Rules (Firestore):
 //   match /databases/(database)/documents {
-//     match /users/{uid}/data/lists {
-//       allow read, write: if request.auth != null && request.auth.uid == uid;
+//     match /users/{uid} {
+//       allow get: if request.auth != null;               // email lookup for "add member"
+//       allow create, update: if request.auth != null && request.auth.uid == uid;
+//       match /{sub=**} {
+//         allow read, write: if request.auth != null && request.auth.uid == uid;
+//       }
+//     }
+//     match /households/{code} {
+//       allow read, write: if request.auth != null;       // member checks enforced in app
+//       match /{sub=**} {
+//         allow read, write: if request.auth != null;
+//       }
 //     }
 //   }
 
@@ -46,6 +56,11 @@ if (isFirebaseConfigured) {
   app = initializeApp(firebaseConfig);
   auth = getAuth(app);
   db = getFirestore(app);
+}
+
+// Shared Firestore instance (null until Firebase is configured).
+export function getDb() {
+  return db;
 }
 
 // Subscribe to auth changes; returns the unsubscribe function.
@@ -84,4 +99,25 @@ export async function pullListsFromCloud(user) {
   if (!db || !user) return null;
   const snap = await getDoc(doc(db, "users", user.uid, "data", "lists"));
   return snap.exists() ? snap.data().lists : null;
+}
+
+// ---------------------------------------------------------------- user profile
+// Store the signed-in user's email on their users/{uid} doc. This is what
+// makes "add a member by email" possible: the household creator can look up
+// the uid for an email address and grant access without the other person
+// joining by code first.
+
+import { collection, getDocs, query, where, setDoc } from "firebase/firestore";
+
+export async function storeUserProfile(user) {
+  if (!db || !user) return;
+  await setDoc(doc(db, "users", user.uid), { email: user.email || "" }, { merge: true });
+}
+
+export async function findUserByEmail(email) {
+  if (!db || !email) return null;
+  const q = query(collection(db, "users"), where("email", "==", email.trim().toLowerCase()));
+  const snap = await getDocs(q);
+  const hit = snap.docs.find((d) => d.data().email === email.trim().toLowerCase());
+  return hit ? hit.id : null;
 }

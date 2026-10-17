@@ -4,12 +4,15 @@ import {
   Alert,
   ScrollView,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { COLORS } from "../styles/App.styles";
 import { useLists } from "../utils/ListsContext";
+import useHousehold from "../utils/useHousehold";
 import { formatDate } from "../utils/sections";
+import HouseholdPanel from "./HouseholdPanel";
 
 export default function Home({ navigation }) {
   const {
@@ -20,9 +23,11 @@ export default function Home({ navigation }) {
     firebaseEnabled,
     createList,
     deleteList,
+    updateList,
     login,
     logout,
   } = useLists();
+  const { household, create, join, leave, setAccess, addMember } = useHousehold();
 
   const sorted = [...lists].sort(
     (a, b) => new Date(b.date) - new Date(a.date)
@@ -89,6 +94,19 @@ export default function Home({ navigation }) {
             </View>
           )}
         </View>
+
+        {/* Household: create/join, member management, per-list sharing */}
+        <HouseholdPanel
+          household={household}
+          user={user}
+          lists={lists}
+          onLeave={leave}
+          onSetAccess={setAccess}
+          onAddMember={addMember}
+          updateList={updateList}
+          create={create}
+          join={join}
+        />
 
         {/* New list button */}
         <TouchableOpacity
