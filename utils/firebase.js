@@ -107,7 +107,7 @@ export async function pullListsFromCloud(user) {
 // the uid for an email address and grant access without the other person
 // joining by code first.
 
-import { collection, getDocs, query, where, setDoc } from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
 
 export async function storeUserProfile(user) {
   if (!db || !user) return;
