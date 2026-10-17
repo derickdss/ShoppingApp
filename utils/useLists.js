@@ -20,7 +20,8 @@ export default function useLists() {
   const [user, setUser] = useState(null);
   const [syncStatus, setSyncStatus] = useState("local"); // "local" | "synced"
   const userRef = useRef(null);
-  const skipPull = useRef(false);
+  const listsRef = useRef([]);
+  listsRef.current = lists;
 
   // Load local data once.
   useEffect(() => {
@@ -30,18 +31,26 @@ export default function useLists() {
     });
   }, []);
 
-  // Subscribe to auth and handle cloud pull on sign-in.
+  // Subscribe to auth. On sign-in (or app reopen after a redirect sign-in),
+  // pull the cloud collection and merge it with what's on this device.
   useEffect(() => {
     const unsub = onAuthChange(async (u) => {
       setUser(u);
       userRef.current = u;
-      if (u && !skipPull.current) {
+      if (!u) return;
+      try {
         const cloud = await pullListsFromCloud(u);
         if (cloud && Array.isArray(cloud) && cloud.length) {
           setLists(cloud);
           saveLists(cloud);
           setSyncStatus("synced");
+        } else {
+          // No cloud data yet — push this device's lists so other phones see them.
+          await syncListsToCloud(u, listsRef.current);
+          setSyncStatus("synced");
         }
+      } catch (e) {
+        setSyncStatus("local");
       }
     });
     return unsub;
@@ -73,21 +82,10 @@ export default function useLists() {
   }, [lists, commit]);
 
   const login = useCallback(async () => {
-    skipPull.current = false;
-    const u = await loginWithGoogle();
-    setUser(u);
-    userRef.current = u;
-    // Pull cloud data, then push local if cloud is empty.
-    const cloud = await pullListsFromCloud(u);
-    if (cloud && Array.isArray(cloud) && cloud.length) {
-      setLists(cloud);
-      saveLists(cloud);
-    } else {
-      await syncListsToCloud(u, lists);
-    }
-    setSyncStatus("synced");
-    return u;
-  }, [lists]);
+    // Redirect flow: kicks off Google sign-in; the auth-state effect above
+    // handles the cloud pull/push once the user comes back.
+    await loginWithGoogle();
+  }, []);
 
   const logoutUser = useCallback(async () => {
     await logout();

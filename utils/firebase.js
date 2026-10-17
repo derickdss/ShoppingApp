@@ -19,7 +19,7 @@ import { initializeApp } from "firebase/app";
 import {
   getAuth,
   GoogleAuthProvider,
-  signInWithPopup,
+  signInWithRedirect,
   signOut,
   onAuthStateChanged,
 } from "firebase/auth";
@@ -59,9 +59,11 @@ export function onAuthChange(callback) {
 
 export async function loginWithGoogle() {
   if (!auth) throw new Error("Firebase is not configured yet.");
+  // Redirect flow works on web AND native (popup can't open a window on a phone).
   const provider = new GoogleAuthProvider();
-  const cred = await signInWithPopup(auth, provider);
-  return cred.user;
+  await signInWithRedirect(auth, provider);
+  // The app reloads after the redirect and onAuthStateChanged fires with the user.
+  return null;
 }
 
 export async function logout() {
