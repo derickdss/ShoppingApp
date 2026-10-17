@@ -36,12 +36,12 @@ import {
 import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "PASTE_YOUR_API_KEY",
-  authDomain: "PASTE_YOUR_PROJECT.firebaseapp.com",
-  projectId: "PASTE_YOUR_PROJECT_ID",
-  storageBucket: "PASTE_YOUR_PROJECT.appspot.com",
-  messagingSenderId: "PASTE_YOUR_SENDER_ID",
-  appId: "PASTE_YOUR_APP_ID",
+  apiKey: "AIzaSyDcAesnhV6fZeixLRssVz1UeOCja3fV2ow",
+  authDomain: "derickdssshoppingapp.firebaseapp.com",
+  projectId: "derickdssshoppingapp",
+  storageBucket: "derickdssshoppingapp.firebasestorage.app",
+  messagingSenderId: "385949126648",
+  appId: "1:385949126648:web:08f5f3b606b950edaa900d",
 };
 
 export const isFirebaseConfigured =
