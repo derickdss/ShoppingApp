@@ -132,27 +132,31 @@ export default function Home({ navigation }) {
             const total = list.sections.reduce((n, s) => n + s.items.length, 0);
             const done = list.sections.reduce((n, s) => n + s.items.filter((i) => i.done).length, 0);
             return (
-              <TouchableOpacity
+              <View
                 key={list.id}
-                onPress={() => navigation.navigate("ListEditor", { id: list.id })}
-                activeOpacity={0.85}
                 style={{ backgroundColor: "#fff", borderRadius: 14, padding: 16, marginBottom: 12, elevation: 2 }}
               >
                 <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                  <Text style={{ fontSize: 18, fontWeight: "bold", color: COLORS.text, flex: 1 }}>
-                    {list.title || "Untitled list"}
-                  </Text>
-                  <TouchableOpacity onPress={() => confirmDelete(list)} style={{ marginLeft: 8, padding: 6 }}>
+                  <TouchableOpacity
+                    style={{ flex: 1, paddingRight: 8 }}
+                    activeOpacity={0.85}
+                    onPress={() => navigation.navigate("ListEditor", { id: list.id })}
+                  >
+                    <Text style={{ fontSize: 18, fontWeight: "bold", color: COLORS.text }}>
+                      {list.title || "Untitled list"}
+                    </Text>
+                    <Text style={{ fontSize: 13, color: COLORS.muted, marginTop: 4 }}>
+                      {formatDate(list.date, true)}
+                    </Text>
+                    <Text style={{ fontSize: 13, color: COLORS.muted, marginTop: 2 }}>
+                      {total} item{total === 1 ? "" : "s"} • {done} done
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => confirmDelete(list)} style={{ padding: 6 }}>
                     <Text style={{ color: COLORS.danger, fontSize: 18 }}>🗑</Text>
                   </TouchableOpacity>
                 </View>
-                <Text style={{ fontSize: 13, color: COLORS.muted, marginTop: 4 }}>
-                  {formatDate(list.date, true)}
-                </Text>
-                <Text style={{ fontSize: 13, color: COLORS.muted, marginTop: 2 }}>
-                  {total} item{total === 1 ? "" : "s"} • {done} done
-                </Text>
-              </TouchableOpacity>
+              </View>
             );
           })
         )}
