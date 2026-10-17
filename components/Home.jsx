@@ -56,7 +56,7 @@ export default function Home({ navigation }) {
     <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
         {/* Login / account bar */}
-        <View style={{ ...COLORS.card, backgroundColor: "#fff", borderRadius: 14, padding: 14, marginBottom: 18, elevation: 2 }}>
+        <View style={{ backgroundColor: COLORS.card, borderRadius: 14, padding: 14, marginBottom: 18, elevation: 2 }}>
           {user ? (
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
               <View style={{ flex: 1 }}>
