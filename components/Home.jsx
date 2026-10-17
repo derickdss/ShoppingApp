@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Modal,
   ScrollView,
   Text,
   TextInput,
@@ -38,16 +39,10 @@ export default function Home({ navigation }) {
     navigation.navigate("ListEditor", { id });
   };
 
+  const [pendingDelete, setPendingDelete] = useState(null);
+
   const confirmDelete = (list) => {
-    console.log("[bin] delete pressed for", list.id, list.title);
-    Alert.alert(
-      "Delete list?",
-      `Delete "${list.title || "Untitled list"}"? This cannot be undone.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Delete", style: "destructive", onPress: () => deleteList(list.id) },
-      ]
-    );
+    setPendingDelete(list);
   };
 
   const handleLogin = async () => {
@@ -166,6 +161,41 @@ export default function Home({ navigation }) {
           })
         )}
       </ScrollView>
+
+      {/* Delete confirmation (Alert.alert is a no-op on web, so use a Modal) */}
+      <Modal
+        transparent
+        visible={pendingDelete !== null}
+        animationType="fade"
+        onRequestClose={() => setPendingDelete(null)}
+      >
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "center", alignItems: "center", padding: 24 }}>
+          <View style={{ backgroundColor: COLORS.card, borderRadius: 16, padding: 22, width: "100%", maxWidth: 340, elevation: 8 }}>
+            <Text style={{ fontSize: 18, fontWeight: "bold", color: COLORS.text, textAlign: "center" }}>Delete list?</Text>
+            <Text style={{ fontSize: 14, color: COLORS.muted, textAlign: "center", marginTop: 8, marginBottom: 18 }}>
+              Delete "{pendingDelete ? pendingDelete.title || "Untitled list" : ""}"? This cannot be undone.
+            </Text>
+            <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
+              <TouchableOpacity
+                onPress={() => setPendingDelete(null)}
+                style={{ paddingVertical: 10, paddingHorizontal: 16, borderRadius: 10, backgroundColor: "#eee", marginRight: 10 }}
+              >
+                <Text style={{ color: COLORS.text, fontWeight: "bold" }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  const id = pendingDelete.id;
+                  setPendingDelete(null);
+                  deleteList(id);
+                }}
+                style={{ paddingVertical: 10, paddingHorizontal: 16, borderRadius: 10, backgroundColor: COLORS.danger }}
+              >
+                <Text style={{ color: "#fff", fontWeight: "bold" }}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
