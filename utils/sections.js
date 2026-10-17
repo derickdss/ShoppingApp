@@ -15,8 +15,8 @@ export const DEFAULT_SECTIONS = [
 export function buildNewList(title = "") {
   const now = new Date().toISOString();
   const trimmed = (title || "").trim();
-  // Default title is the creation date, e.g. "17 Oct 2026-list".
-  const finalTitle = trimmed || `${formatDate(now)}-list`;
+  // Default title is the creation date + time, e.g. "17 Oct 2026, 3:05 PM-list".
+  const finalTitle = trimmed || `${formatDate(now, true)}-list`;
   return {
     id: makeId(),
     title: finalTitle,
